@@ -45,18 +45,27 @@
     [viewController.view addSubview:note];
     
     __block typeof(viewController) weakViewController = viewController;
+
+    void (^hideblock)(void) = ^(void){
+        [UIView animateWithDuration:0.4 animations:^{
+            [note setFrame:[CSNotificationView offscreenFrameForInParentViewController:weakViewController]];
+        } completion:^(BOOL finished) {
+            [note removeFromSuperview];
+        }];
+    };
+    
+    
+    UITapGestureRecognizer *tapped = [[UITapGestureRecognizer alloc] initWithTarget:[hideblock copy] action:@selector(invoke)];////this isn't completely kosher
+    //instead set to an action on the CSNotificationView itself
+    [note addGestureRecognizer:tapped];
+    
     [UIView animateWithDuration:0.4 animations:^{
         [note setFrame:[CSNotificationView displayFrameInParentViewController:weakViewController]];
     } completion:^(BOOL finished) {
         dispatch_time_t popTime =
                 dispatch_time(DISPATCH_TIME_NOW, (int64_t)(duration * NSEC_PER_SEC));
-        dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-            [UIView animateWithDuration:0.4 animations:^{
-                [note setFrame:[CSNotificationView offscreenFrameForInParentViewController:weakViewController]];
-            } completion:^(BOOL finished) {
-                [note removeFromSuperview];
-            }];
-        });
+        dispatch_after(popTime, dispatch_get_main_queue(),hideblock);
+        ;
     }];
     
 }
